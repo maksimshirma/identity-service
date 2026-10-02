@@ -13,11 +13,31 @@ Self-hosted identity/auth сервис на [Better-Auth](https://www.better-aut
 
 - `betterAuth()` инстанс — серверная логика (sign-up/sign-in/session/callback), конфигурируется плагинами.
 - Kysely adapter — персистентность в Postgres, как и в соседних сервисах.
+- Node + Hono — `auth.handler` монтируется в Hono-роут `/api/auth/*` через `@hono/node-server` (Web-standard Request/Response); Hono даёт маршрутизацию и middleware (CORS, logger, rate-limit) для своих ручек сверх Better-Auth.
 - Плагины: `organization` (household-модель, роли, инвайты, Dynamic Access Control), `twoFactor`, `multiSession` (список сессий/устройств), `bearer` (non-browser потребители — MCP-серверы, другие backend-сервисы).
 - Потребители ходят либо через HTTP (`/api/auth/get-session` — session introspection, как userinfo в OAuth), либо через фронтовый `createAuthClient()` (только hostyara shell).
 
 ## Стек
 
-- TypeScript (ESM)
+- TypeScript (ESM), pnpm
+- Node.js — runtime
+- Hono — маршрутизация и middleware (`@hono/node-server` под Node)
 - Better-Auth
 - Postgres — Kysely adapter
+
+## Установка
+
+```bash
+git clone <repo_url>
+cd identity-service
+pnpm install
+```
+
+## Запуск
+
+```bash
+pnpm dev            # tsx watch src/main.ts, http://localhost:3000
+pnpm build          # tsc -> dist/
+pnpm start          # node dist/main.js
+pnpm check:types    # tsc --noEmit
+```
