@@ -14,7 +14,7 @@ Self-hosted identity/auth сервис на [Better-Auth](https://www.better-aut
 - `betterAuth()` инстанс — серверная логика (sign-up/sign-in/session/callback), конфигурируется плагинами.
 - Kysely adapter — персистентность в Postgres, как и в соседних сервисах.
 - Node + Hono — `auth.handler` монтируется в Hono-роут `/api/auth/*` через `@hono/node-server` (Web-standard Request/Response); Hono даёт маршрутизацию и middleware (CORS, logger, rate-limit) для своих ручек сверх Better-Auth.
-- Плагины: `organization` (household-модель, роли, инвайты, Dynamic Access Control), `twoFactor`, `multiSession` (список сессий/устройств), `bearer` (non-browser потребители — MCP-серверы, другие backend-сервисы).
+- Плагины: `organization` (household-модель, роли, инвайты, Dynamic Access Control), `twoFactor`. Список/ревокация сессий по устройствам (`/account/sessions`) — через core-эндпоинты `list-sessions`/`revoke-session`/`revoke-other-sessions`, без отдельного плагина (`multiSession`-плагин решает другую задачу — переключение между несколькими аккаунтами в одном браузере, не нужен здесь). `bearer` (non-browser потребители — MCP-серверы, другие backend-сервисы) — появится в Фазе 4/5.
 - Потребители ходят либо через HTTP (`/api/auth/get-session` — session introspection, как userinfo в OAuth), либо через фронтовый `createAuthClient()` (только hostyara shell).
 
 ## Стек

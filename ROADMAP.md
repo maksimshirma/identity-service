@@ -30,7 +30,7 @@ Household-модель: orgs, роли (owner/admin/member), участники,
 
 ### Phase 3 — Session & security plugins
 
-`multiSession` — список активных устройств/сессий (`/account/sessions` в hostyara). `twoFactor` (`/account/security`).
+Список активных устройств/сессий (`/account/sessions` в hostyara) — через core `list-sessions`/`revoke-session`/`revoke-other-sessions`, без плагина (`multiSession`-плагин для другого — переключения между аккаунтами в одном браузере). `twoFactor` (`/account/security`).
 **Готово:** юзер видит список своих сессий и может их завершить; 2FA включается и проверяется при логине.
 
 ### Phase 4 — Non-browser consumers
