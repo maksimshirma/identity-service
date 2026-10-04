@@ -2,8 +2,10 @@ import { Hono } from "hono";
 import { type Kysely, sql } from "kysely";
 import type { auth as Auth } from "./auth/index.js";
 import type { Database } from "./db/schema.js";
+import { registerAccountSecurityRoutes } from "./routes/account-security.js";
 import { registerIntrospectRoutes } from "./routes/introspect.js";
 import { registerOrganizationRoutes } from "./routes/organization.js";
+import { registerTokenRoutes } from "./routes/token.js";
 
 export function createServer(db: Kysely<Database>, auth: typeof Auth) {
   const app = new Hono();
@@ -17,6 +19,8 @@ export function createServer(db: Kysely<Database>, auth: typeof Auth) {
 
   registerOrganizationRoutes(app, db, auth);
   registerIntrospectRoutes(app, db, auth);
+  registerTokenRoutes(app, db, auth);
+  registerAccountSecurityRoutes(app, db, auth);
 
   return app;
 }

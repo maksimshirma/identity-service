@@ -37,10 +37,27 @@ interface SigningKeysTable {
   retiredAt: ColumnType<Date | null, Date | string | null, Date | string | null>;
 }
 
+interface PatTable {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  name: string | null;
+  createdAt: ColumnType<Date, Date | string, never>;
+  revokedAt: ColumnType<Date | null, Date | string | null, Date | string | null>;
+}
+
+interface ServiceGrantsTable {
+  clientId: string;
+  appId: string;
+  scope: string[];
+}
+
 export interface Database {
   member: MemberTable;
   grants: GrantsTable;
   installed_apps: InstalledAppsTable;
   clients: ClientsTable;
   signing_keys: SigningKeysTable;
+  pat: PatTable;
+  service_grants: ServiceGrantsTable;
 }
