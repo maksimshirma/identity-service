@@ -1,9 +1,11 @@
 import { serve } from "@hono/node-server";
+import { env } from "./config/env.js";
+import { createKyselyInstance } from "./db/kysely.js";
 import { createServer } from "./server.js";
 
-const port = Number(process.env.PORT ?? 3000);
-const app = createServer();
+const db = createKyselyInstance(env.postgres);
+const app = createServer(db);
 
-serve({ fetch: app.fetch, port }, (info) => {
+serve({ fetch: app.fetch, port: env.port }, (info) => {
   console.log(`identity-service listening on http://localhost:${info.port}`);
 });
