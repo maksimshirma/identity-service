@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { type Kysely, sql } from "kysely";
 import type { auth as Auth } from "./auth/index.js";
 import type { Database } from "./db/schema.js";
+import { registerIntrospectRoutes } from "./routes/introspect.js";
 import { registerOrganizationRoutes } from "./routes/organization.js";
 
 export function createServer(db: Kysely<Database>, auth: typeof Auth) {
@@ -15,6 +16,7 @@ export function createServer(db: Kysely<Database>, auth: typeof Auth) {
   app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
   registerOrganizationRoutes(app, db, auth);
+  registerIntrospectRoutes(app, db, auth);
 
   return app;
 }
