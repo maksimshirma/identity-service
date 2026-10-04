@@ -36,8 +36,27 @@ pnpm install
 ## Запуск
 
 ```bash
+cp .env.example .env
+docker compose up -d        # Postgres
+
 pnpm dev            # tsx watch src/main.ts, http://localhost:3000
 pnpm build          # tsc -> dist/
 pnpm start          # node dist/main.js
 pnpm check:types    # tsc --noEmit
 ```
+
+## База данных
+
+Две независимые миграционные дорожки на одной БД:
+
+- **Схема Better-Auth** (`user`/`session`/`account`/`verification` + плагины) — через `@better-auth/cli`, SQL-файлы лежат в `better-auth_migrations/`:
+  ```bash
+  npx @better-auth/cli generate -y   # перегенерировать SQL после изменения src/auth/index.ts
+  npx @better-auth/cli migrate -y    # применить к БД
+  ```
+- **Собственные таблицы сервиса** (`grants`, `clients`, `service_grants`, PAT, `installed_apps`, `grant_requests` — появятся в следующих фазах) — через Kysely `Migrator`, файлы в `src/db/migrations/`:
+  ```bash
+  pnpm db:migrate
+  ```
+
+Не смешивать: Better-Auth CLI не знает про `src/db/migrations/`, наш `Migrator` не трогает таблицы Better-Auth.
