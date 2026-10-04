@@ -14,6 +14,7 @@ export interface CreateAuthOptions {
 export function createAuth(db: Kysely<Database>, options: CreateAuthOptions = {}) {
   return betterAuth({
     database: { db, type: "postgres" },
+    baseURL: env.baseUrl,
     rateLimit: { enabled: options.rateLimitEnabled ?? true },
     emailAndPassword: {
       enabled: true,
