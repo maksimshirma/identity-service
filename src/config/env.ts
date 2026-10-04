@@ -16,6 +16,7 @@ function requireEnv(name: string): string {
 
 export const env = {
   port: Number(process.env.PORT ?? 3000),
+  bffWebhookUrl: process.env.BFF_WEBHOOK_URL,
   postgres: {
     host: process.env.POSTGRES_HOST ?? "localhost",
     port: Number(process.env.POSTGRES_PORT ?? 5432),

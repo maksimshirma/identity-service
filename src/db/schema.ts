@@ -58,6 +58,23 @@ interface ServiceGrantsTable {
   scope: string[];
 }
 
+interface StepUpTable {
+  sessionToken: string;
+  reauthAt: ColumnType<Date, Date | string, Date | string>;
+}
+
+interface GrantRequestsTable {
+  id: string;
+  hid: string;
+  userId: string;
+  appId: string;
+  requestedLevel: "view" | "edit";
+  status: Generated<"pending" | "approved" | "denied">;
+  decidedBy: string | null;
+  decidedAt: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  createdAt: ColumnType<Date, Date | string, never>;
+}
+
 export interface Database {
   member: MemberTable;
   grants: GrantsTable;
@@ -67,4 +84,6 @@ export interface Database {
   pat: PatTable;
   service_grants: ServiceGrantsTable;
   app_manifests: AppManifestsTable;
+  step_up: StepUpTable;
+  grant_requests: GrantRequestsTable;
 }
