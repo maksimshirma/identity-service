@@ -1,4 +1,5 @@
 import type { Kysely } from "kysely";
+import { getPermissionsForApps } from "./dac.js";
 import type { Database } from "../db/schema.js";
 
 type GrantLevel = "view" | "edit";
@@ -60,12 +61,15 @@ export async function getHouseholdIntrospection(
     }
   }
 
+  const appIds = installedApps.map((a) => a.appId);
+  const permissions = await getPermissionsForApps(db, hid, appIds);
+
   return {
     userId,
     hid,
     role: member.role,
-    installedApps: installedApps.map((a) => a.appId),
+    installedApps: appIds,
     grants,
-    permissions: {},
+    permissions,
   };
 }

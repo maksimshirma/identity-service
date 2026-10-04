@@ -19,6 +19,12 @@ interface InstalledAppsTable {
   hid: string;
   appId: string;
   installedAt: Generated<Date>;
+  confirmed: Generated<boolean>;
+}
+
+interface AppManifestsTable {
+  appId: string;
+  permissions: string[];
 }
 
 interface ClientsTable {
@@ -60,4 +66,5 @@ export interface Database {
   signing_keys: SigningKeysTable;
   pat: PatTable;
   service_grants: ServiceGrantsTable;
+  app_manifests: AppManifestsTable;
 }
