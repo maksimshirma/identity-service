@@ -72,6 +72,19 @@ pnpm check:types    # tsc --noEmit
 
 Не смешивать: Better-Auth CLI не знает про `src/db/migrations/`, наш `Migrator` не трогает таблицы Better-Auth.
 
+## Тесты
+
+e2e, против настоящего Postgres (не моки) — то же, что принято в financial-management-service. Тесты бьют прямо в `Hono`-приложение (`app.request(...)`, встроенный способ Hono), не через сеть, `supertest` не используется.
+
+```bash
+docker compose up -d   # тот же dev-Postgres
+pnpm test               # pretest подготавливает identity_service_test, затем jest
+```
+
+`pretest` (`src/test/setup-test-db.ts`) каждый раз пересоздаёт `${POSTGRES_DB}_test` с нуля — накатывает `better-auth_migrations/*.sql` напрямую и свои миграции через тот же Kysely `Migrator`. Между тестами — `truncateAllTables()` (не транзакции).
+
+Тесты лежат в `__jest__/` рядом с проверяемым кодом (`src/routes/__jest__/token.test.ts` и т.п.).
+
 ## Деплой (prod)
 
 ```bash

@@ -5,6 +5,7 @@ import { isStepUpFresh } from "./auth/step-up.js";
 import type { Database } from "./db/schema.js";
 import { createRateLimiter } from "./middleware/rate-limit.js";
 import { registerAccountSecurityRoutes } from "./routes/account-security.js";
+import { registerDocsRoutes } from "./routes/docs.js";
 import { registerGrantRequestRoutes } from "./routes/grant-requests.js";
 import { registerIntrospectRoutes } from "./routes/introspect.js";
 import { registerOrganizationRoutes } from "./routes/organization.js";
@@ -68,6 +69,7 @@ export function createServer(db: Kysely<Database>, auth: typeof Auth) {
   registerTokenRoutes(app, db, auth);
   registerAccountSecurityRoutes(app, db, auth);
   registerGrantRequestRoutes(app, db, auth);
+  registerDocsRoutes(app, auth);
 
   return app;
 }
