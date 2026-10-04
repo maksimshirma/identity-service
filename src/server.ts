@@ -3,6 +3,7 @@ import { type Kysely, sql } from "kysely";
 import type { auth as Auth } from "./auth/index.js";
 import { isStepUpFresh } from "./auth/step-up.js";
 import type { Database } from "./db/schema.js";
+import { createRateLimiter } from "./middleware/rate-limit.js";
 import { registerAccountSecurityRoutes } from "./routes/account-security.js";
 import { registerGrantRequestRoutes } from "./routes/grant-requests.js";
 import { registerIntrospectRoutes } from "./routes/introspect.js";
@@ -53,6 +54,14 @@ export function createServer(db: Kysely<Database>, auth: typeof Auth) {
   });
 
   app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+  const patCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 5, keyPrefix: "pat-create" });
+  app.use("/account/security/pat", async (c, next) => {
+    if (c.req.method !== "POST") {
+      return next();
+    }
+    return patCreateLimiter(c, next);
+  });
 
   registerOrganizationRoutes(app, db, auth);
   registerIntrospectRoutes(app, db, auth);

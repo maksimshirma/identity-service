@@ -11,11 +11,22 @@ Self-hosted identity/auth сервис на [Better-Auth](https://www.better-aut
 
 ## Архитектура
 
-- `betterAuth()` инстанс — серверная логика (sign-up/sign-in/session/callback), конфигурируется плагинами.
-- Kysely adapter — персистентность в Postgres, как и в соседних сервисах.
-- Node + Hono — `auth.handler` монтируется в Hono-роут `/api/auth/*` через `@hono/node-server` (Web-standard Request/Response); Hono даёт маршрутизацию и middleware (CORS, logger, rate-limit) для своих ручек сверх Better-Auth.
-- Плагины: `organization` (household-модель, роли, инвайты, Dynamic Access Control), `twoFactor`. Список/ревокация сессий по устройствам (`/account/sessions`) — через core-эндпоинты `list-sessions`/`revoke-session`/`revoke-other-sessions`, без отдельного плагина (`multiSession`-плагин решает другую задачу — переключение между несколькими аккаунтами в одном браузере, не нужен здесь). `bearer` (non-browser потребители — MCP-серверы, другие backend-сервисы) — появится в Фазе 4/5.
-- Потребители ходят либо через HTTP (`/api/auth/get-session` — session introspection, как userinfo в OAuth), либо через фронтовый `createAuthClient()` (только hostyara shell).
+identity-service — единственный эмитент токенов и владелец signing-ключей в системе. BFF (hostyara-shell), саб-аппы, alt-frontend'ы — другие репозитории; этот сервис отдаёт им только HTTP-контракты ниже.
+
+- `betterAuth()` + Kysely adapter (Postgres) — sign-up/sign-in/session, смонтирован на `/api/auth/*`.
+- Плагины: `organization` (household = org, роли owner/admin/member, инвайты), `twoFactor` (TOTP + backup-коды). **Намеренно не использованы**: `multiSession` (другая задача — переключение аккаунтов в одном браузере), `bearer` (non-browser идут через cookie-сессию на `/introspect` или через PAT/`service` grant на `/token`), встроенный `dynamicAccessControl` org-плагина (это про кастомные роли управления организацией, не про права саб-аппов на platform API).
+- Список/ревокация сессий по устройствам — core-эндпоинты `list-sessions`/`revoke-session`/`revoke-other-sessions`, без плагина.
+- Свои таблицы (Kysely, не Better-Auth): `grants`, `installed_apps`, `app_manifests`, `clients`, `service_grants`, `signing_keys`, `pat`, `step_up`, `grant_requests`, `audit_log`.
+- Свои эндпоинты:
+  - `GET /introspect` → `{userId}` — минимальный non-household потребитель (financial-management-service).
+  - `GET /introspect/household?hid=` → `{userId,hid,role,installedApps,grants,permissions}` — 401/403, non-disclosure (одинаковый 403 независимо от существования `hid`).
+  - `GET /jwks.json` — публичные ключи (EdDSA/Ed25519, ротация ≤2 активных).
+  - `POST /token?grant_type=session|pat|service|public` — единая выдача internal-JWT (`aud`/`scope`/`exp=60s`), 4 типа вызывающих.
+  - `POST /org/transfer-ownership` — атомарная передача owner-прав admin'у.
+  - `POST /account/security/reauth`, `/account/security/pat` (CRUD) — step-up и Personal Access Tokens.
+  - `POST /grant-requests`, `GET /grant-requests?hid=`, `POST /grant-requests/:id/approve|deny` — запрос/подтверждение доступа к установленному саб-аппу.
+- Вебхук `BFF_WEBHOOK_URL` ← `{hid,userId?,appId?}` на любое изменение роли/членства/гранта — для инвалидации кэша и live-push на фронте (не наша зона).
+- Потребители ходят либо через HTTP, либо через фронтовый `createAuthClient()` (только hostyara shell, для Better-Auth-нативных ручек).
 
 ## Стек
 
@@ -54,9 +65,23 @@ pnpm check:types    # tsc --noEmit
   npx @better-auth/cli generate -y   # перегенерировать SQL после изменения src/auth/index.ts
   npx @better-auth/cli migrate -y    # применить к БД
   ```
-- **Собственные таблицы сервиса** (`grants`, `clients`, `service_grants`, PAT, `installed_apps`, `grant_requests` — появятся в следующих фазах) — через Kysely `Migrator`, файлы в `src/db/migrations/`:
+- **Собственные таблицы сервиса** (`grants`, `installed_apps`, `app_manifests`, `clients`, `service_grants`, `signing_keys`, `pat`, `step_up`, `grant_requests`, `audit_log`) — через Kysely `Migrator`, файлы в `src/db/migrations/`:
   ```bash
   pnpm db:migrate
   ```
 
 Не смешивать: Better-Auth CLI не знает про `src/db/migrations/`, наш `Migrator` не трогает таблицы Better-Auth.
+
+## Деплой (prod)
+
+```bash
+docker compose build identity-service
+docker compose --profile prod up -d postgres
+docker compose run --rm identity-service sh -c \
+  "npx @better-auth/cli migrate -y && npx tsx src/db/migrations/run.ts"   # разово на новой БД
+docker compose --profile prod up -d identity-service
+```
+
+`--profile prod` не активируется обычным `docker compose up` — дефолтный dev-воркфлоу (`pnpm dev` + голый Postgres из compose) не трогается. Миграции — ручной шаг, не авто-run в контейнере.
+
+Обязательно в `.env` для прода: `BETTER_AUTH_SECRET` (иначе падает на небезопасный dev-дефолт).

@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 import type { Kysely } from "kysely";
 import type { auth as Auth } from "../auth/index.js";
+import { recordAudit } from "../auth/audit.js";
 import { approveGrantRequest, createGrantRequest, denyGrantRequest, listGrantRequests } from "../auth/grant-requests.js";
 import { getMemberRole, hasRole } from "../auth/member-role.js";
 import { emitAccessChanged } from "../auth/webhooks.js";
@@ -70,6 +71,13 @@ export function registerGrantRequestRoutes(app: Hono, db: Kysely<Database>, auth
     }
 
     emitAccessChanged({ hid: result.request.hid, userId: result.request.userId, appId: result.request.appId });
+    await recordAudit(db, {
+      eventType: "grant_request.approved",
+      actorType: "user",
+      actorId: session.user.id,
+      hid: result.request.hid,
+      appId: result.request.appId,
+    });
     return c.json(result.request);
   });
 
@@ -85,6 +93,13 @@ export function registerGrantRequestRoutes(app: Hono, db: Kysely<Database>, auth
       return c.json({ error: result.error }, status);
     }
 
+    await recordAudit(db, {
+      eventType: "grant_request.denied",
+      actorType: "user",
+      actorId: session.user.id,
+      hid: result.request.hid,
+      appId: result.request.appId,
+    });
     return c.json(result.request);
   });
 }

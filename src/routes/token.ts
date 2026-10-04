@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 import type { Kysely } from "kysely";
 import type { auth as Auth } from "../auth/index.js";
+import { recordAudit } from "../auth/audit.js";
 import { verifyBffClient, verifyServiceClient, getServiceGrantScope } from "../auth/clients.js";
 import { getHouseholdIntrospection } from "../auth/grants.js";
 import { verifyPat } from "../auth/pat.js";
@@ -56,6 +57,13 @@ export function registerTokenRoutes(app: Hono, db: Kysely<Database>, auth: typeo
         scope: grant.scope,
         grant_type: "session",
       });
+      await recordAudit(db, {
+        eventType: "token.issued",
+        actorType: "user",
+        actorId: session.user.id,
+        hid: body.hid,
+        appId: body.appId,
+      });
       return c.json({ token });
     }
 
@@ -83,6 +91,13 @@ export function registerTokenRoutes(app: Hono, db: Kysely<Database>, auth: typeo
         scope: grant.scope,
         grant_type: "pat",
       });
+      await recordAudit(db, {
+        eventType: "token.issued",
+        actorType: "user",
+        actorId: pat.userId,
+        hid: body.hid,
+        appId: body.appId,
+      });
       return c.json({ token });
     }
 
@@ -104,6 +119,13 @@ export function registerTokenRoutes(app: Hono, db: Kysely<Database>, auth: typeo
         scope,
         grant_type: "service",
       });
+      await recordAudit(db, {
+        eventType: "token.issued",
+        actorType: "service",
+        actorId: client.clientId,
+        hid: body.hid,
+        appId: body.appId,
+      });
       return c.json({ token });
     }
 
@@ -119,6 +141,12 @@ export function registerTokenRoutes(app: Hono, db: Kysely<Database>, auth: typeo
         aud: body.appId,
         scope: ["view"],
         grant_type: "public",
+      });
+      await recordAudit(db, {
+        eventType: "token.issued",
+        actorType: "public",
+        actorId: client.clientId,
+        appId: body.appId,
       });
       return c.json({ token });
     }

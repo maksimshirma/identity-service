@@ -17,6 +17,31 @@ services:
       retries: 5
       start_period: 15s
 
+  # Production app container. Not part of plain `docker compose up` (dev
+  # workflow runs the app locally via `pnpm dev` against this same postgres
+  # service) — opt in with:
+  #   docker compose --profile prod up -d
+  identity-service:
+    build:
+      context: .
+    image: identity-service:local
+    profiles: ["prod"]
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      BFF_WEBHOOK_URL: ${BFF_WEBHOOK_URL:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pg-data:
     name: identity-service-pg-data

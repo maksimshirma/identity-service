@@ -75,6 +75,16 @@ interface GrantRequestsTable {
   createdAt: ColumnType<Date, Date | string, never>;
 }
 
+interface AuditLogTable {
+  id: string;
+  eventType: string;
+  actorType: "user" | "service" | "public";
+  actorId: string | null;
+  hid: string | null;
+  appId: string | null;
+  createdAt: ColumnType<Date, Date | string, never>;
+}
+
 export interface Database {
   member: MemberTable;
   grants: GrantsTable;
@@ -86,4 +96,5 @@ export interface Database {
   app_manifests: AppManifestsTable;
   step_up: StepUpTable;
   grant_requests: GrantRequestsTable;
+  audit_log: AuditLogTable;
 }
