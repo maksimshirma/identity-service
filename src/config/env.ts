@@ -14,12 +14,20 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function parseList(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 const port = Number(process.env.PORT ?? 3000);
 
 export const env = {
   port,
   baseUrl: process.env.BETTER_AUTH_URL ?? `http://localhost:${port}`,
   bffWebhookUrl: process.env.BFF_WEBHOOK_URL,
+  trustedOrigins: parseList(process.env.TRUSTED_ORIGINS),
   postgres: {
     host: process.env.POSTGRES_HOST ?? "localhost",
     port: Number(process.env.POSTGRES_PORT ?? 5432),

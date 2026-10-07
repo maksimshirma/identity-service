@@ -9,12 +9,19 @@ import { emitAccessChanged } from "./webhooks.js";
 
 export interface CreateAuthOptions {
   rateLimitEnabled?: boolean;
+  trustedOrigins?: string[];
 }
 
 export function createAuth(db: Kysely<Database>, options: CreateAuthOptions = {}) {
   return betterAuth({
     database: { db, type: "postgres" },
     baseURL: env.baseUrl,
+    // Server-to-server callers that send an Origin other than baseURL — the
+    // hostyara BFF proxies sign-in/organization calls with its own public origin.
+    trustedOrigins: options.trustedOrigins ?? env.trustedOrigins,
+    // Better-Auth silently disables the Origin check when NODE_ENV=test;
+    // keep it on so the test suite exercises the production CSRF behavior.
+    advanced: { disableOriginCheck: false },
     rateLimit: { enabled: options.rateLimitEnabled ?? true },
     emailAndPassword: {
       enabled: true,

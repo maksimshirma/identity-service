@@ -17,6 +17,22 @@ services:
       retries: 5
       start_period: 15s
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ${PGADMIN_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SESSION_COOKIE_NAME: ${PGADMIN_CONFIG_SESSION_COOKIE_NAME}
+    ports:
+      - "${PGADMIN_PORT}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Production app container. Not part of plain `docker compose up` (dev
   # workflow runs the app locally via `pnpm dev` against this same postgres
   # service) — opt in with:
@@ -35,6 +51,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       BFF_WEBHOOK_URL: ${BFF_WEBHOOK_URL:-}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
     ports:
       - "${PORT:-3000}:3000"
@@ -45,4 +62,7 @@ services:
 volumes:
   pg-data:
     name: identity-service-pg-data
+    driver: local
+  pgadmin-data:
+    name: identity-service-pgadmin-data
     driver: local

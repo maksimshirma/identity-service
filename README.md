@@ -21,6 +21,22 @@ identity-service — единственный эмитент токенов и �
 - Вебхук `BFF_WEBHOOK_URL` ← `{hid,userId?,appId?}` на любое изменение роли/членства/гранта — для инвалидации кэша и live-push на фронте (не наша зона).
 - Потребители ходят либо через HTTP, либо через фронтовый `createAuthClient()` (только hostyara shell, для Better-Auth-нативных ручек).
 
+### Подключение hostyara BFF
+
+BFF (`hostyara/apps/bff`) ходит сюда server-to-server от имени браузера, поэтому:
+
+- миграция `0012_seed_hostyara_bff_client` регистрирует его в `clients` как `('hostyara-bff', 'bff')` — нужно для `public`-grant на `/token`; `BFF_CLIENT_ID` у BFF должен совпадать;
+- BFF шлёт `Origin` = своему `BFF_PUBLIC_URL`, а Better-Auth проверяет Origin у POST-запросов с кукой — этот origin должен быть в `TRUSTED_ORIGINS` (через запятую), иначе `403 INVALID_ORIGIN`;
+- `BFF_WEBHOOK_URL` указывает на внутренний listener BFF: `http://localhost:4001/webhooks/access-changed`.
+
+Локально host занимает `:3000`, поэтому вместе с hostyara этот сервис запускается на `:3001`:
+
+```bash
+PORT=3001 TRUSTED_ORIGINS=http://localhost:3000 BFF_WEBHOOK_URL=http://localhost:4001/webhooks/access-changed pnpm dev
+```
+
+Проверка Origin включена и в тестах (`advanced.disableOriginCheck: false`): по умолчанию Better-Auth выключает её при `NODE_ENV=test`.
+
 ## Стек
 
 - TypeScript (ESM), pnpm
@@ -193,4 +209,4 @@ docker compose --profile prod up -d identity-service
 
 `--profile prod` не активируется обычным `docker compose up` — дефолтный dev-воркфлоу (`pnpm dev` + голый Postgres из compose) не трогается. Миграции — ручной шаг, не авто-run в контейнере.
 
-Обязательно в `.env` для прода: `BETTER_AUTH_SECRET` (иначе падает на небезопасный dev-дефолт).
+Обязательно в `.env` для прода: `BETTER_AUTH_SECRET` (иначе падает на небезопасный dev-дефолт). С hostyara BFF — также `TRUSTED_ORIGINS` (публичный origin shell) и `BFF_WEBHOOK_URL` (внутренний адрес BFF).
